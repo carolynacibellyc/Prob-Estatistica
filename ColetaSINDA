@@ -1,0 +1,193 @@
+import pandas as pd
+import numpy as np
+import math, random
+#from urllib.request import urlopen
+import csv
+
+#df = pd.read_csv('32527.csv', usecols=['Pluvio (mm                                                )'])
+#df.sort_values([''], ascending=[True], inplace=True)
+df = pd.read_csv('32527.csv')
+df.columns = ['DataHora', 'Bateria', 'CorrPSol', 'VelVentoMax', 'DirVento' ,'Pluvio', 'PressaoAtm','RadSolAcm', 'TempAr', 'TempMax' ,'TempMin', 'UmidInt', 'UmidRel', 'VelVento10', 'VelVento3', 'VelVentoMax']
+date = (df['Pluvio'])
+#date.sort_values()
+
+
+k = int(1 + 3.3 * math.log10(date.size)) #Numero de Classes
+
+minimo = date.min()
+maximo = date.max()
+
+h = ((maximo-minimo) / k) #Intervalo de classes
+
+
+print("Numero de classes:", k)
+print("Menor valor:", minimo)
+print("Maior valor:", maximo)
+print("Total de elementos: ", date.size)
+
+minimo_classes = minimo #Classes (min |- min + h)
+intervalo_classes=[]
+print("Intervalo de classes/Amplitude:", h)
+print()
+
+for i in range (k):
+    intervalo = ("%i |- %i" %(minimo_classes, minimo_classes+h))
+    minimo_classes += h
+    intervalo_classes.append(intervalo)
+
+at = date.max()-date.min()
+
+#k = raiz quadrada do total de registros/amostras
+#O valor de amplitude de classe pode ser arredondado para um número inteiro, geralmente para facilitar a interpretação da tabela.
+
+frequencias = []
+
+# Menor valor da série
+menor = round(date.min(),1)
+
+# Menor valor somado a amplitude
+menor_amp = round(menor+h,1) 
+
+valor = menor
+
+while valor < date.max():
+    frequencias.append('{} |- {}'.format(round(valor,1),round(valor+h,1)))
+    valor += h
+
+#Frequência Simples (fi)
+freq_abs = pd.qcut(date,len(frequencias),labels=frequencias) # Discretização dos valores em k faixas, rotuladas pela lista criada anteriormentefi = freq_abs.value_counts().sort_index()
+fi = freq_abs.value_counts().sort_index()
+
+acumulada = freq_abs.value_counts().sort_index().cumsum()
+
+
+
+
+#Frequência Relativa Simples (fri)
+fri = freq_abs.value_counts(normalize=True).sort_index()
+
+
+#Frequência Relativa Acumulada (Fri) (Fi/N) 
+Fri = freq_abs.value_counts(normalize=True).sort_index().cumsum()
+
+
+#Porcentagem
+porc = freq_abs.value_counts(normalize=True).sort_index()*(100)
+
+
+#Ângulo
+ang = freq_abs.value_counts(normalize=True).sort_index().cumsum()*(360)
+
+
+#Ponto Médio (xi)
+freq = []
+valor = menor
+while valor < date.max():
+    freq.append(((valor)+(valor+h))/2)
+    valor += h  
+xi = freq
+
+
+#Xifi \n
+xifi = freq_abs.value_counts().sort_index().cumsum()*freq
+
+
+
+media_xi = freq_abs.value_counts().sort_index().cumsum()*freq
+j = 0
+for i in media_xi.values:
+  j+=i
+  
+media = j/date.size
+
+
+#xi - x\n
+modulo = abs(freq-media)
+
+
+#|xi-x|*fi\n
+modulo2 = modulo*fi
+
+#|xi-x|² *fi\n
+quad = abs(modulo)*abs(modulo)
+modulo3 = quad*fi.values
+
+moda = date.mode()
+
+# Mediana 
+mediana = date.median()
+
+# Variância
+variancia = date.var()
+
+#Desvio Padrão
+desvio_padrao = date.std()
+
+
+# Primeiro Quartil
+primeiroquartil = date.quantile(0.25)
+
+#print("Segundo Quartil \n")
+segundoquartil = date.quantile(0.5)
+
+#print("Terceiro Quartil \n")
+terceiroquartil = date.quantile(0.75)
+
+
+#Gráfico de Pizza
+#abels = intervalo_classes 
+#sizes = ang
+
+#fig1, ax1 = plt.subplots()
+#ax1.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+#ax1.axis('equal')
+#plt.title('Ângulo\n')
+#plt.savefig('Angulo.png')
+
+
+data = {
+    'fi': fi,
+    'Fi': acumulada,
+    'fri': fri,
+    'Fri': Fri,
+    '%': porc,
+    'Ang': ang,
+    'xi':freq,
+    'xifi': xifi,
+    '|xi-x|': modulo,
+    '|xi-x|*fi': modulo2,
+    '|xi-x^2|*fi': modulo3
+}
+
+table = pd.DataFrame(data)
+table['media'] = ''
+table['media'][0] = media
+table
+
+table['moda'] = ''
+table['moda'][0] = moda[0]
+table
+
+table['mediana'] = ''
+table['mediana'][0] = mediana
+table
+
+table['variancia'] = ''
+table['variancia'][0] = variancia
+table
+
+table['Desvio padrao'] = ''
+table['Desvio padrao'][0] = desvio_padrao
+table
+
+table['Primeiro Quartil'] = ''
+table['Primeiro Quartil'][0] = primeiroquartil
+table
+
+table['Segundo Quartil'] = ''
+table['Segundo Quartil'][0] = segundoquartil
+table
+
+table['Terceiro Quartil'] = ''
+table['Terceiro Quartil'][0] = terceiroquartil
+table
